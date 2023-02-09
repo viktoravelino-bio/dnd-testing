@@ -9,6 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
 
 const Box = styled.div.attrs({})`
   background-color: #d3d3d3;
@@ -18,7 +19,7 @@ const Box = styled.div.attrs({})`
   box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
   overflow: hidden;
-  cursor: grab;
+  /* cursor: grab; */
 `;
 
 const Header = styled.header.attrs({})`
@@ -35,48 +36,48 @@ const Body = styled.div.attrs({})`
   padding: 10px;
 `;
 
-export function Column({ label, id }) {
-  const columnItems = useMemo(
-    () => items.filter((item) => item.columnId === id),
-    [id]
-  );
-
-  const {
-    listeners,
-    isDragging,
-    attributes,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
+export function Column({ label, id, children, items }) {
+  const { setNodeRef } = useDroppable({
     id,
-    data: {
-      type: 'column',
-      children: columnItems,
-    },
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+  // const {
+  //   listeners,
+  //   isDragging,
+  //   attributes,
+  //   setNodeRef,
+  //   transform,
+  //   transition,
+  // } = useSortable({
+  //   id,
+  //   data: {
+  //     type: 'column',
+  //     children: columnItems,
+  //   },
+  // });
 
-    ...(isDragging ? { opacity: 0, cursor: 'grabbing' } : undefined),
-  };
+  // const style = {
+  //   transform: CSS.Transform.toString(transform),
+  //   transition,
+
+  //   ...(isDragging ? { opacity: 0, cursor: 'grabbing' } : undefined),
+  // };
 
   return (
-    <Box ref={setNodeRef} {...listeners} {...attributes} style={style}>
-      <Header>{label}</Header>
+    <SortableContext
+      id={id}
+      items={items}
+      strategy={verticalListSortingStrategy}
+    >
+      <Box ref={setNodeRef}>
+        <Header>{label}</Header>
 
-      <Body>
-        <SortableContext
-          items={columnItems}
-          strategy={verticalListSortingStrategy}
-        >
-          {columnItems.map((item) => (
+        <Body>
+          {items.map((item) => (
             <Item key={item.id} {...item} />
           ))}
-        </SortableContext>
-      </Body>
-    </Box>
+        </Body>
+      </Box>
+    </SortableContext>
   );
 }
