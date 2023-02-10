@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-import { collection, getFirestore } from 'firebase/firestore';
+import { collection as fbCollection, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDHaK2I3wPsSvIznYNdACnpdlbNO6H9BJM',
@@ -15,5 +15,50 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-export const statusCollection = collection(db, 'status');
-export const tasksCollection = collection(db, 'tasks');
+export const COLLECTIONS = {
+  status: 'status',
+  tasks: 'tasks',
+};
+
+export const converters = {
+  status: {
+    toFirestore: (status) => {
+      return {
+        label: status.label,
+        index: status.index,
+      };
+    },
+    fromFirestore: (snapshot, options) => {
+      const data = snapshot.data(options);
+      return {
+        id: snapshot.id,
+        label: data.label,
+        index: data.index,
+      };
+    },
+  },
+  task: {
+    toFirestore: (task) => {
+      return {
+        label: task.label,
+        index: task.index,
+        statusId: task.statusId,
+      };
+    },
+    fromFirestore: (snapshot, options) => {
+      const data = snapshot.data(options);
+      return {
+        id: snapshot.id,
+        label: data.label,
+        index: data.index,
+        statusId: data.statusId,
+      };
+    },
+  },
+};
+
+export function collection(collectionName) {
+  return fbCollection(db, collectionName).withConverter(
+    converters[collectionName]
+  );
+}

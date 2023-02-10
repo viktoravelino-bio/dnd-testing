@@ -19,6 +19,7 @@ const Box = styled.div.attrs({})`
   box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
   overflow: hidden;
+  border: 2px solid red;
   /* cursor: grab; */
 `;
 
@@ -37,47 +38,38 @@ const Body = styled.div.attrs({})`
 `;
 
 export function Column({ label, id, children, items }) {
-  const { setNodeRef } = useDroppable({
+  const {
+    listeners,
+    attributes,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id,
   });
 
-  // const {
-  //   listeners,
-  //   isDragging,
-  //   attributes,
-  //   setNodeRef,
-  //   transform,
-  //   transition,
-  // } = useSortable({
-  //   id,
-  //   data: {
-  //     type: 'column',
-  //     children: columnItems,
-  //   },
-  // });
-
-  // const style = {
-  //   transform: CSS.Transform.toString(transform),
-  //   transition,
-
-  //   ...(isDragging ? { opacity: 0, cursor: 'grabbing' } : undefined),
-  // };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(isDragging ? { opacity: 0.5, cursor: 'grabbing' } : undefined),
+  };
 
   return (
-    <SortableContext
-      id={id}
-      items={items}
-      strategy={verticalListSortingStrategy}
-    >
-      <Box ref={setNodeRef}>
-        <Header>{label}</Header>
+    <Box ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <Header>{label}</Header>
 
-        <Body>
+      <Body>
+        <SortableContext
+          id={id}
+          items={items}
+          strategy={verticalListSortingStrategy}
+        >
           {items.map((item) => (
             <Item key={item.id} {...item} />
           ))}
-        </Body>
-      </Box>
-    </SortableContext>
+        </SortableContext>
+      </Body>
+    </Box>
   );
 }

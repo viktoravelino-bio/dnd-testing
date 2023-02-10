@@ -1,192 +1,221 @@
 import { arrayMove } from '@dnd-kit/sortable';
 import { doc, writeBatch } from 'firebase/firestore';
-import { useCallback, useEffect, useState } from 'react';
-import { unstable_batchedUpdates } from 'react-dom';
-import { db } from '../lib/firebase';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { COLLECTIONS, db } from '../lib/firebase';
+import { findContainer, getIndex } from '../lib/utils';
 import { useFirebase } from './use-firestore';
 
 export function useDnd() {
-  const { getAllStatus, getAllTasks } = useFirebase();
-  const [activeDraggingId, setActiveDraggingId] = useState(null);
+  const { getAllDocs } = useFirebase();
   const [data, setData] = useState({});
-  //   const [columns, setColumns] = useState([]);
+  const [containers, setContainers] = useState([]);
+  const [clonedData, setClonedData] = useState(null);
+  const recentlyMovedToNewContainer = useRef(false);
 
-  const columns = Object.keys(data) || [];
+  // item id that is being dragged
+  const [activeDraggingId, setActiveDraggingId] = useState(null);
 
+  // check if the item is being dragged is a container
+  const isActiveDraggingItemContainer = containers.includes(activeDraggingId);
+
+  // get the actual item that is being dragged
+  const activeDraggingItem = isActiveDraggingItemContainer
+    ? data[activeDraggingId]
+    : data[findContainer(activeDraggingId, data)]?.items.find(
+        (item) => item.id === activeDraggingId
+      );
+
+  //load the data from database
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [status, tasks] = await Promise.all([
-          getAllStatus(),
-          getAllTasks(),
-        ]);
+    async function load() {
+      const [status, tasks] = await Promise.all([
+        getAllDocs(COLLECTIONS.status),
+        getAllDocs(COLLECTIONS.tasks),
+      ]);
 
-        const statusTasksMap = status
-          .sort((a, b) => {
-            if (a.index < b.index) return -1;
-            if (a.index > b.index) return 1;
-            return 0;
-          })
-          .reduce((acc, status) => {
-            acc[status.id] = {
+      const groupedTasks = tasks.groupBy((task) => task.statusId);
+
+      const dataObj = status
+        .sort((a, b) => a.index - b.index)
+        .reduce((acc, status) => {
+          return {
+            ...acc,
+            [status.id]: {
               ...status,
-              items: tasks
-                .filter((task) => task.statusId === status.id)
-                .sort((a, b) => {
-                  if (a.index < b.index) return -1;
-                  if (a.index > b.index) return 1;
-                  return 0;
-                }),
-            };
-            return acc;
-          }, {});
+              items:
+                groupedTasks[status.id]?.sort((a, b) => a.index - b.index) ??
+                [],
+            },
+          };
+        }, {});
 
-        setData(statusTasksMap);
-      } catch (error) {
-        console.warn(error);
-      }
+      setData(dataObj);
+      setContainers(Object.keys(dataObj) || []);
     }
 
-    fetchData();
+    load();
   }, []);
 
-  const findContainer = useCallback(
-    (id) => {
-      if (id in data) {
-        return id;
-      }
-      return Object.keys(data).find((key) =>
-        data[key].items.some((item) => item.id === id)
-      );
+  useEffect(() => {
+    if (Object.keys(data).length === 0) return;
+  }, [data]);
+
+  const handleDragCancel = useCallback(() => {
+    if (clonedData) {
+      setData(clonedData);
+    }
+
+    setActiveDraggingId(null);
+    setClonedData(null);
+  }, [clonedData, setClonedData, setActiveDraggingId]);
+
+  const handleDragStart = useCallback(
+    ({ active }) => {
+      setActiveDraggingId(active.id);
+      setClonedData(data);
     },
-    [data]
+    [setActiveDraggingId, setClonedData, data]
   );
-
-  const isActiveDraggingContainer = columns.includes(activeDraggingId);
-
-  const activeDraggingItem =
-    data[findContainer(activeDraggingId)]?.items.find(
-      (item) => item.id === activeDraggingId
-    ) || null;
-
-  const handleDragStart = useCallback(({ active }) => {
-    setActiveDraggingId(active.id);
-  }, []);
 
   const handleDragOver = useCallback(
     ({ active, over }) => {
       const overId = over?.id;
-      const activeId = active?.id;
+      const activeId = active.id;
 
-      if (overId == null || activeId in data) return;
+      if (overId === null || activeId in data) {
+        return;
+      }
 
-      const activeContainer = findContainer(activeId);
-      const overContainer = findContainer(overId);
+      const overContainer = findContainer(overId, data);
+      const activeContainer = findContainer(activeId, data);
 
       if (!overContainer || !activeContainer) {
         return;
       }
 
-      if (activeContainer === overContainer) return;
+      if (activeContainer !== overContainer) {
+        setData((prevData) => {
+          const activeItems = prevData[activeContainer].items;
+          const overItems = prevData[overContainer].items;
+          const activeIndex = getIndex(activeId, prevData);
+          const overIndex = getIndex(overId, prevData);
 
-      setData((prevData) => {
-        const activeColumn = prevData[activeContainer];
-        const overColumn = prevData[overContainer];
-        const activeItemIndex = activeColumn.items.findIndex(
-          (item) => item.id === activeId
-        );
-        const overItemIndex = overColumn.items.findIndex(
-          (item) => item.id === overId
-        );
+          let newIndex;
 
-        let newIndex;
+          if (overId in prevData) {
+            newIndex = overItems.length + 1;
+          } else {
+            const isBelowOverItem =
+              active?.rect.current.translated?.top >
+              over?.rect.top + over?.rect.height;
 
-        if (overId in data) {
-          newIndex = overColumn.items.length;
-        } else {
-          const isBelowItem =
-            active?.rect?.current.translated?.top >
-            over?.rect.top + over?.rect.height;
+            const modifier = isBelowOverItem ? 1 : 0;
 
-          const modifier = isBelowItem ? 1 : 0;
+            newIndex =
+              overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+          }
 
-          newIndex =
-            overItemIndex >= 0
-              ? overItemIndex + modifier
-              : overItems.length + 1;
-        }
+          recentlyMovedToNewContainer.current = true;
 
-        return {
-          ...prevData,
-          [activeContainer]: {
-            ...activeColumn,
-            items: prevData[activeContainer].items.filter(
-              (item) => item.id !== active.id
-            ),
-          },
-          [overContainer]: {
-            ...overColumn,
-            items: [
-              ...prevData[overContainer].items.slice(0, newIndex),
-              {
-                ...prevData[activeContainer].items[activeItemIndex],
-                statusId: overContainer,
-              },
-              ...prevData[overContainer].items.slice(
-                newIndex,
-                prevData[overContainer].length
-              ),
-            ],
-          },
-        };
-      });
+          return {
+            ...prevData,
+            [activeContainer]: {
+              ...prevData[activeContainer],
+              items: activeItems.filter((item) => item.id !== activeId),
+            },
+            [overContainer]: {
+              ...prevData[overContainer],
+              items: [
+                ...overItems.slice(0, newIndex),
+                {
+                  ...activeItems[activeIndex],
+                  statusId: overContainer,
+                },
+                ...overItems.slice(newIndex, overItems.length),
+              ],
+            },
+          };
+        });
+      }
     },
-    [findContainer]
+    [data, setData, getIndex, findContainer]
   );
 
   const handleDragEnd = useCallback(
     ({ active, over }) => {
-      const activeId = active?.id;
       const overId = over?.id;
+      const activeId = active.id;
 
-      const activeContainer = findContainer(active.id);
+      if (activeId in data && overId) {
+        const activeIndex = containers.indexOf(activeId);
+        const overIndex = containers.indexOf(overId);
+        const newArray = arrayMove(containers, activeIndex, overIndex);
 
-      if (!activeContainer) {
+        setContainers(newArray);
+
+        const newEntries = Object.entries(data).map(([key, values]) => {
+          const containerIndex = newArray.indexOf(key);
+
+          return [key, { ...values, index: containerIndex }];
+        });
+
+        const newDataObj = Object.fromEntries(newEntries);
+
+        const newContainersArray = Object.values(newDataObj);
+
+        const batch = writeBatch(db);
+
+        newContainersArray.forEach((container) => {
+          const containerRef = doc(db, COLLECTIONS.status, container.id);
+          batch.update(containerRef, {
+            index: container.index,
+          });
+        });
+
+        batch.commit();
+
+        setData(newDataObj);
+      }
+
+      const activeContainer = findContainer(activeId, data);
+
+      if (!activeContainer || overId === null) {
         setActiveDraggingId(null);
         return;
       }
 
-      if (overId == null) {
-        setActiveDraggingId(null);
-        return;
-      }
-
-      const overContainer = findContainer(overId);
+      const overContainer = findContainer(overId, data);
+      const overItems = data[overContainer].items;
 
       if (overContainer) {
-        const activeItemIndex = data[activeContainer].items.findIndex(
-          (item) => item.id === activeId
-        );
-        const overItemIndex = data[overContainer].items.findIndex(
-          (item) => item.id === overId
-        );
+        const activeIndex = getIndex(activeId, data);
+        const overIndex = getIndex(overId, data);
 
-        if (activeItemIndex !== overItemIndex) {
-          const newItemsArray = arrayMove(
-            data[overContainer].items,
-            activeItemIndex,
-            overItemIndex
-          ).map((item, index) => ({
+        const newTasksArray = arrayMove(overItems, activeIndex, overIndex).map(
+          (item, index) => ({
             ...item,
             index,
-          }));
+          })
+        );
 
+        const batch = writeBatch(db);
+        newTasksArray.forEach((task) => {
+          const taskRef = doc(db, COLLECTIONS.tasks, task.id);
+          batch.update(taskRef, {
+            index: task.index,
+            statusId: overContainer,
+          });
+        });
+
+        batch.commit();
+
+        if (activeIndex !== overIndex) {
           setData((prevData) => {
             return {
               ...prevData,
               [overContainer]: {
                 ...prevData[overContainer],
-                items: newItemsArray,
+                items: newTasksArray,
               },
             };
           });
@@ -195,73 +224,17 @@ export function useDnd() {
 
       setActiveDraggingId(null);
     },
-    [findContainer]
+    [setActiveDraggingId, data, containers, setContainers]
   );
-
-  useEffect(() => {
-    if (Object.keys(data).length === 0) return;
-    //save data into firebase
-    async function saveData() {
-      try {
-        // const status = await getAllStatus();
-        // const tasks = await getAllTasks();
-        // const statusMap = status.reduce((acc, status) => {
-        //   acc[status.id] = status;
-        //   return acc;
-        // }, {});
-        // const tasksMap = tasks.reduce((acc, task) => {
-        //   acc[task.id] = task;
-        //   return acc;
-        // }, {});
-
-        const newStatus = Object.values(data).map((column) => {
-          //   const oldStatus = statusMap[column.id];
-          const { items, ...newColumn } = column;
-          return {
-            ...newColumn,
-            index: column.index,
-          };
-        });
-
-        const newTasks = Object.values(data)
-          .map((column) => column.items)
-          .flat()
-          .map((task) => {
-            // const oldTask = tasksMap[task.id];
-
-            return {
-              ...task,
-              index: task.index,
-            };
-          });
-
-        const batch = writeBatch(db);
-
-        newStatus.forEach((status) => {
-          const ref = doc(db, 'status', status.id);
-          batch.set(ref, status);
-        });
-
-        newTasks.forEach((task) => {
-          const ref = doc(db, 'tasks', task.id);
-          batch.set(ref, task);
-        });
-
-        await batch.commit();
-      } catch (error) {
-        console.warn(error);
-      }
-    }
-
-    saveData();
-  }, [data]);
 
   return {
     handleDragStart,
     handleDragEnd,
+    handleDragCancel,
     handleDragOver,
     data,
-    columns,
+    containers,
+    isActiveDraggingItemContainer,
     activeDraggingItem,
   };
 }

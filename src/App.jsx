@@ -6,28 +6,37 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+} from '@dnd-kit/sortable';
 import { Column } from './Column';
+
 import { useDnd } from './hooks/use-dnd';
 import { Item } from './Item';
 
 export default function App() {
-  const sensors = useSensors(useSensor(PointerSensor));
-
   const {
-    handleDragStart,
     handleDragEnd,
+    handleDragStart,
+    handleDragCancel,
     handleDragOver,
     data,
-    columns,
+    containers,
+    isActiveDraggingItemContainer,
     activeDraggingItem,
   } = useDnd();
+  const sensors = useSensors(useSensor(PointerSensor));
 
-  if (!data || !columns) return null;
+  if (containers.length === 0) {
+    return <h1>Loading...</h1>;
+  }
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      onDragCancel={handleDragCancel}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -40,13 +49,25 @@ export default function App() {
           overflowX: 'auto',
         }}
       >
-        {columns.map((columnId) => (
-          <Column key={columnId} {...data[columnId]} />
-        ))}
+        <SortableContext
+          id="columns"
+          items={containers}
+          strategy={horizontalListSortingStrategy}
+        >
+          {containers.map((columnId) => (
+            <Column key={columnId} {...data[columnId]} />
+          ))}
+        </SortableContext>
       </div>
 
       <DragOverlay>
-        {activeDraggingItem ? <Item {...activeDraggingItem} /> : null}
+        {activeDraggingItem ? (
+          isActiveDraggingItemContainer ? (
+            <Column {...data[activeDraggingItem.id]} />
+          ) : (
+            <Item {...activeDraggingItem} />
+          )
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

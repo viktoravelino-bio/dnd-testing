@@ -26,7 +26,7 @@ export function Item({ label, id }) {
     transform: CSS.Transform.toString(transform),
     transition,
 
-    ...(isDragging ? { opacity: 0, cursor: 'grabbing' } : undefined),
+    ...(isDragging ? { opacity: 0.5, cursor: 'grabbing' } : undefined),
   };
 
   return (

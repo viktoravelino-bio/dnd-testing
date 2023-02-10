@@ -1,30 +1,19 @@
-import { getDocs, getDoc } from 'firebase/firestore';
+import { getDocs } from 'firebase/firestore';
 
-import { statusCollection, tasksCollection } from '../lib/firebase';
+import { collection } from '../lib/firebase';
+
+function formatDoc(doc) {
+  return {
+    id: doc.id,
+    ...doc.data(),
+  };
+}
 
 export function useFirebase() {
-  async function getAllStatus() {
-    const querySnapshot = await getDocs(statusCollection);
-    const status = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    return status;
+  async function getAllDocs(collectionName) {
+    const querySnapshot = await getDocs(collection(collectionName));
+    return querySnapshot.docs.map(formatDoc);
   }
 
-  async function getAllTasks() {
-    const querySnapshot = await getDocs(tasksCollection);
-    const tasks = querySnapshot.docs.map((taskDoc) => {
-      return {
-        id: taskDoc.id,
-
-        ...taskDoc.data(),
-      };
-    });
-
-    return tasks;
-  }
-
-  return { getAllTasks, getAllStatus };
+  return { getAllDocs };
 }
