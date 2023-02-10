@@ -15,20 +15,13 @@ export function useFirebase() {
 
   async function getAllTasks() {
     const querySnapshot = await getDocs(tasksCollection);
-    const tasks = await Promise.all(
-      querySnapshot.docs.map(async (taskDoc) => {
-        const taskDocData = taskDoc.data();
-        const { status: statusRef, ...taskDocDataRest } = taskDocData;
+    const tasks = querySnapshot.docs.map((taskDoc) => {
+      return {
+        id: taskDoc.id,
 
-        const statusDoc = await getDoc(statusRef);
-
-        return {
-          id: taskDoc.id,
-          statusId: statusDoc.id,
-          ...taskDocDataRest,
-        };
-      })
-    );
+        ...taskDoc.data(),
+      };
+    });
 
     return tasks;
   }
