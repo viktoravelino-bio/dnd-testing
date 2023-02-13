@@ -26,6 +26,7 @@ export const converters = {
       return {
         label: status.label,
         index: status.index,
+        assignee: status.assignee
       };
     },
     fromFirestore: (snapshot, options) => {
@@ -34,6 +35,7 @@ export const converters = {
         id: snapshot.id,
         label: data.label,
         index: data.index,
+        assignee: data.assignee
       };
     },
   },
