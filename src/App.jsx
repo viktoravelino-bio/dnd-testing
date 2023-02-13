@@ -10,10 +10,10 @@ import {
   horizontalListSortingStrategy,
   SortableContext,
 } from '@dnd-kit/sortable';
-import { Column } from './Column';
+import { Column } from './Components/Molecules/Column';
 
 import { useDnd } from './hooks/use-dnd';
-import { Item } from './Item';
+import { Item } from './Components/Molecules/Item';
 
 export default function App() {
   const {
