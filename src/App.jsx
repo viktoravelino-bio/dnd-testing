@@ -1,74 +1,41 @@
-import {
-  closestCenter,
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  horizontalListSortingStrategy,
-  SortableContext,
-} from '@dnd-kit/sortable';
-import { Column } from './Components/Molecules/Column';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import Login from './Login';
 
-import { useDnd } from './hooks/use-dnd';
-import { Item } from './Components/Molecules/Item';
+import { useEffect, useState } from 'react';
+import Kanban from './Kanban';
+import Header from './Components/Molecules/Header/Header';
+import { useStoreState } from 'pullstate';
+import { AppStore } from './stores/AppStore';
 
 export default function App() {
-  const {
-    handleDragEnd,
-    handleDragStart,
-    handleDragCancel,
-    handleDragOver,
-    data,
-    containers,
-    isActiveDraggingItemContainer,
-    activeDraggingItem,
-  } = useDnd();
-  const sensors = useSensors(useSensor(PointerSensor));
+    const store = useStoreState(AppStore);
+    const { user } = store;
 
-  if (containers.length === 0) {
-    return <h1>Loading...</h1>;
-  }
+    useEffect(() => {
+        console.log('user', user);
+        onAuthStateChanged(getAuth(), (user) => {
+            console.log('onAuthStateChanged', user);
+            if (user) {
+                const uid = user.uid;
+                AppStore.update((s) => {
+                    s.user = user;
+                });
 
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragCancel={handleDragCancel}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div
-        style={{
-          display: 'flex',
-          gap: '20px',
-          padding: '20px',
-          overflowX: 'auto',
-        }}
-      >
-        <SortableContext
-          id="columns"
-          items={containers}
-          strategy={horizontalListSortingStrategy}
-        >
-          {containers.map((columnId) => (
-            <Column key={columnId} {...data[columnId]} />
-          ))}
-        </SortableContext>
-      </div>
+                console.log('user', user);
+            } else {
+                AppStore.update((s) => {
+                    s.user = null;
+                });
+            }
+        });
+    }, []);
 
-      <DragOverlay>
-        {activeDraggingItem ? (
-          isActiveDraggingItemContainer ? (
-            <Column {...data[activeDraggingItem.id]} />
-          ) : (
-            <Item {...activeDraggingItem} />
-          )
-        ) : null}
-      </DragOverlay>
-    </DndContext>
-  );
+    if (!user) return <Login />;
+    else
+        return (
+            <>
+                <Header />
+                <Kanban />
+            </>
+        );
 }
