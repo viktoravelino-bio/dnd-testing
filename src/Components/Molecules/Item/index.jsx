@@ -1,8 +1,8 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { ListItem } from "./styles";
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { ListItem } from './styles';
 
-export function Item({ label, assignee, id }) {
+export function Item({ label, assignee, id, createdBy }) {
   const {
     listeners,
     attributes,
@@ -18,7 +18,7 @@ export function Item({ label, assignee, id }) {
     transform: CSS.Transform.toString(transform),
     transition,
 
-    ...(isDragging ? { opacity: 0.5, cursor: "grabbing" } : undefined),
+    ...(isDragging ? { opacity: 0.5, cursor: 'grabbing' } : undefined),
   };
 
   return (
@@ -27,8 +27,13 @@ export function Item({ label, assignee, id }) {
         <h3>{label}</h3>
       </div>
       <div>
-        <p>{assignee}</p>
+        <p>assignee: {assignee}</p>
       </div>
+      {createdBy && (
+        <div>
+          <p>createdBy: {createdBy.displayName}</p>
+        </div>
+      )}
     </ListItem>
   );
 }

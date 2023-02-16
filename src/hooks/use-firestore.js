@@ -1,10 +1,18 @@
-import { getDocs } from 'firebase/firestore';
+import { getDoc, getDocs } from 'firebase/firestore';
 
 import { collection } from '../lib/firebase';
 
-function formatDoc(doc) {
+async function formatDoc(doc, collectionName) {
+  if (collectionName === 'tasks' && doc.data().createdBy) {
+    const createdBy = await getDoc(doc.data().createdBy);
+    return {
+      ...doc.data(),
+      createdBy: createdBy.data(),
+    };
+  }
+
   return {
-    id: doc.id,
+    // id: doc.id,
     ...doc.data(),
   };
 }
@@ -12,7 +20,11 @@ function formatDoc(doc) {
 export function useFirebase() {
   async function getAllDocs(collectionName) {
     const querySnapshot = await getDocs(collection(collectionName));
-    return querySnapshot.docs.map(formatDoc);
+    return await Promise.all(
+      querySnapshot.docs.map(
+        async (doc) => await formatDoc(doc, collectionName)
+      )
+    );
   }
 
   return { getAllDocs };

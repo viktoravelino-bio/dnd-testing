@@ -1,15 +1,19 @@
 import { arrayMove } from '@dnd-kit/sortable';
 import { doc, writeBatch } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useKanbanContext } from '../contexts/KanbanContext';
 import { COLLECTIONS, db } from '../lib/firebase';
 import { findContainer, getIndex } from '../lib/utils';
-import { useFirebase } from './use-firestore';
 
 export function useDnd() {
-  const { getAllDocs } = useFirebase();
-  const [data, setData] = useState({});
-  const [containers, setContainers] = useState([]);
-  const [clonedData, setClonedData] = useState(null);
+  const {
+    data,
+    containers,
+    clonedData,
+    setClonedData,
+    setData,
+    setContainers,
+  } = useKanbanContext();
   const recentlyMovedToNewContainer = useRef(false);
 
   // item id that is being dragged
@@ -24,37 +28,6 @@ export function useDnd() {
     : data[findContainer(activeDraggingId, data)]?.items.find(
         (item) => item.id === activeDraggingId
       );
-
-  //load the data from database
-  useEffect(() => {
-    async function load() {
-      const [status, tasks] = await Promise.all([
-        getAllDocs(COLLECTIONS.status),
-        getAllDocs(COLLECTIONS.tasks),
-      ]);
-
-      const groupedTasks = tasks.groupBy((task) => task.statusId);
-
-      const dataObj = status
-        .sort((a, b) => a.index - b.index)
-        .reduce((acc, status) => {
-          return {
-            ...acc,
-            [status.id]: {
-              ...status,
-              items:
-                groupedTasks[status.id]?.sort((a, b) => a.index - b.index) ??
-                [],
-            },
-          };
-        }, {});
-
-      setData(dataObj);
-      setContainers(Object.keys(dataObj) || []);
-    }
-
-    load();
-  }, []);
 
   useEffect(() => {
     if (Object.keys(data).length === 0) return;
@@ -185,7 +158,7 @@ export function useDnd() {
       }
 
       const overContainer = findContainer(overId, data);
-      const overItems = data[overContainer].items;
+      const overItems = data[overContainer]?.items;
 
       if (overContainer) {
         const activeIndex = getIndex(activeId, data);

@@ -6,36 +6,39 @@ import Kanban from './Kanban';
 import Header from './Components/Molecules/Header/Header';
 import { useStoreState } from 'pullstate';
 import { AppStore } from './stores/AppStore';
+import { KanbanProvider } from './contexts/KanbanContext';
 
 export default function App() {
-    const store = useStoreState(AppStore);
-    const { user } = store;
+  const store = useStoreState(AppStore);
+  const { user } = store;
 
-    useEffect(() => {
-        console.log('user', user);
-        onAuthStateChanged(getAuth(), (user) => {
-            console.log('onAuthStateChanged', user);
-            if (user) {
-                const uid = user.uid;
-                AppStore.update((s) => {
-                    s.user = user;
-                });
-
-                console.log('user', user);
-            } else {
-                AppStore.update((s) => {
-                    s.user = null;
-                });
-            }
+  useEffect(() => {
+    console.log('user', user);
+    onAuthStateChanged(getAuth(), (user) => {
+      console.log('onAuthStateChanged', user);
+      if (user) {
+        const uid = user.uid;
+        AppStore.update((s) => {
+          s.user = user;
         });
-    }, []);
 
-    if (!user) return <Login />;
-    else
-        return (
-            <>
-                <Header />
-                <Kanban />
-            </>
-        );
+        console.log('user', user);
+      } else {
+        AppStore.update((s) => {
+          s.user = null;
+        });
+      }
+    });
+  }, []);
+
+  if (!user) return <Login />;
+  else
+    return (
+      <>
+        <Header />
+        <KanbanProvider>
+          <Kanban />
+        </KanbanProvider>
+      </>
+    );
 }
