@@ -18,13 +18,13 @@ const Login = () => {
         const userDocRef = doc(collection(COLLECTIONS.users), uid);
         const userDocSnap = await getDoc(userDocRef);
 
-        if (!userDocSnap.exists()) {
-          await setDoc(userDocRef, {
-            displayName: user.displayName,
-            email: user.email,
-            photo: user.photoURL,
-          });
-        }
+        // if (!userDocSnap.exists()) {
+        await setDoc(userDocRef, {
+          displayName: user.displayName,
+          email: user.email,
+          photo: user.photoURL,
+        });
+        // }
         // IdP data available using getAdditionalUserInfo(result)
         // ...
       })

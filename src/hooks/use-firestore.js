@@ -4,10 +4,15 @@ import { collection } from '../lib/firebase';
 
 async function formatDoc(doc, collectionName) {
   if (collectionName === 'tasks' && doc.data().createdBy) {
-    const createdBy = await getDoc(doc.data().createdBy);
+    const [createdBy, assignee] = await Promise.all([
+      getDoc(doc.data().createdBy),
+      getDoc(doc.data().assignee),
+    ]);
+
     return {
       ...doc.data(),
       createdBy: createdBy.data(),
+      assignee: assignee.data(),
     };
   }
 

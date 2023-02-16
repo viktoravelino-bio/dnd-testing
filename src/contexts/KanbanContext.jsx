@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { useFirebase } from '../hooks/use-firestore';
 import { COLLECTIONS } from '../lib/firebase';
 
@@ -9,34 +15,38 @@ export const KanbanProvider = ({ children }) => {
   const [data, setData] = useState({});
   const [containers, setContainers] = useState([]);
   const [clonedData, setClonedData] = useState(null);
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [assigneeOptions, setAssigneeOptions] = useState([]);
+
+  const load = useCallback(async () => {
+    const [status, tasks, users] = await Promise.all([
+      getAllDocs(COLLECTIONS.status),
+      getAllDocs(COLLECTIONS.tasks),
+      getAllDocs(COLLECTIONS.users),
+    ]);
+
+    const groupedTasks = tasks.groupBy((task) => task.statusId);
+
+    const dataObj = status
+      .sort((a, b) => a.index - b.index)
+      .reduce((acc, status) => {
+        return {
+          ...acc,
+          [status.id]: {
+            ...status,
+            items:
+              groupedTasks[status.id]?.sort((a, b) => a.index - b.index) ?? [],
+          },
+        };
+      }, {});
+
+    setData(dataObj);
+    setContainers(Object.keys(dataObj) || []);
+    setStatusOptions(status);
+    setAssigneeOptions(users);
+  }, [setData, setContainers]);
 
   useEffect(() => {
-    async function load() {
-      const [status, tasks] = await Promise.all([
-        getAllDocs(COLLECTIONS.status),
-        getAllDocs(COLLECTIONS.tasks),
-      ]);
-
-      const groupedTasks = tasks.groupBy((task) => task.statusId);
-
-      const dataObj = status
-        .sort((a, b) => a.index - b.index)
-        .reduce((acc, status) => {
-          return {
-            ...acc,
-            [status.id]: {
-              ...status,
-              items:
-                groupedTasks[status.id]?.sort((a, b) => a.index - b.index) ??
-                [],
-            },
-          };
-        }, {});
-
-      setData(dataObj);
-      setContainers(Object.keys(dataObj) || []);
-    }
-
     load();
   }, []);
 
@@ -49,6 +59,9 @@ export const KanbanProvider = ({ children }) => {
         setData,
         setClonedData,
         setContainers,
+        load,
+        statusOptions,
+        assigneeOptions,
       }}
     >
       {children}

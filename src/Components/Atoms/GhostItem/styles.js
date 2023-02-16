@@ -10,8 +10,8 @@ export const Container = styled.button.attrs({})`
   text-align: left;
   opacity: 0.7;
   border: 1px dashed #2a2a2a;
-  position: relative;
-  z-index: 2;
+  /* position: relative; */
+  /* z-index: 2; */
   width: 100%;
   height: 3.5rem;
 
