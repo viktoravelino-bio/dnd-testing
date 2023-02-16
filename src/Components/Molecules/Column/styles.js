@@ -7,6 +7,7 @@ export const Container = styled.div.attrs({})`
   border-radius: 8px;
   box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  flex-shrink: 0;
 `;
 
 const color_map = {
