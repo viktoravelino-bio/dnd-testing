@@ -23,6 +23,8 @@ export const Header = styled.header.attrs({})`
   font-size: 1.2rem;
   font-weight: bold;
   color: ${(props) => color_map[props.status]};
+  display: flex;
+  justify-content: space-between;
 `;
 
 export const List = styled.ul.attrs({})`
@@ -31,4 +33,21 @@ export const List = styled.ul.attrs({})`
   flex-direction: column;
   gap: 20px;
   padding: 10px;
+`;
+
+export const AddButton = styled.button.attrs({})`
+  border: none;
+  background-color: transparent;
+  font-size: 1.4rem;
+  padding: 0.5rem;
+  line-height: 0.7;
+  /* height: ; */
+  border-radius: 100%;
+  cursor: pointer;
+
+  transition: background-color 0.1s ease-in-out;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
 `;
