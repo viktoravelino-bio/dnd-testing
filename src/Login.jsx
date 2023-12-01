@@ -1,6 +1,6 @@
-import { signInWithPopup, GithubAuthProvider } from 'firebase/auth';
-import { getDoc, getDocs, doc, setDoc } from 'firebase/firestore';
-import { auth, db, collection, COLLECTIONS } from './lib/firebase';
+import { signInWithPopup, GithubAuthProvider } from "firebase/auth";
+import { getDoc, getDocs, doc, setDoc } from "firebase/firestore";
+import { auth, db, collection, COLLECTIONS } from "./lib/firebase";
 
 const provider = new GithubAuthProvider();
 const Login = () => {
@@ -43,28 +43,28 @@ const Login = () => {
     //create github login button
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
       }}
     >
       <h1>Kanbam!</h1>
-      <span style={{ fontSize: '5rem' }}>💥</span>
+      <span style={{ fontSize: "5rem" }}>💥</span>
       <button
         onClick={onGithubLoginClick}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          padding: '1rem',
-          border: 'none',
-          borderRadius: '0.5rem',
-          backgroundColor: '#333',
-          color: 'white',
-          cursor: 'pointer',
-          fontSize: '1.5rem',
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          padding: "1rem",
+          border: "none",
+          borderRadius: "0.5rem",
+          backgroundColor: "#333",
+          color: "white",
+          cursor: "pointer",
+          fontSize: "1.5rem",
         }}
       >
         <ion-icon name="logo-github"></ion-icon>Login with Github

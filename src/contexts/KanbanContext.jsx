@@ -4,9 +4,9 @@ import {
   useContext,
   useEffect,
   useState,
-} from 'react';
-import { useFirebase } from '../hooks/use-firestore';
-import { COLLECTIONS } from '../lib/firebase';
+} from "react";
+import { useFirebase } from "../hooks/use-firestore";
+import { COLLECTIONS } from "../lib/firebase";
 
 const KanbanContext = createContext();
 

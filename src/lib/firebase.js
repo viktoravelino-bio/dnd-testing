@@ -1,15 +1,15 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from 'firebase/app';
-import { collection as fbCollection, getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { collection as fbCollection, getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDHaK2I3wPsSvIznYNdACnpdlbNO6H9BJM',
-  authDomain: 'dnd-testing-21484.firebaseapp.com',
-  projectId: 'dnd-testing-21484',
-  storageBucket: 'dnd-testing-21484.appspot.com',
-  messagingSenderId: '209190368784',
-  appId: '1:209190368784:web:aa0b98359ec65e3d07fc95',
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID,
 };
 
 // Initialize Firebase
@@ -19,9 +19,9 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 export const COLLECTIONS = {
-  status: 'status',
-  tasks: 'tasks',
-  users: 'users',
+  status: "status",
+  tasks: "tasks",
+  users: "users",
 };
 
 export const converters = {
